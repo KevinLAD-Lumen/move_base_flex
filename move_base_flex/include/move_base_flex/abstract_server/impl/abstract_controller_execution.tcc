@@ -62,6 +62,8 @@ template<class LOCAL_PLANNER_BASE>
     private_nh.param("local_planner_max_retries", max_retries_, 10);
     private_nh.param("local_planner_patience", patience, 1.0);
     private_nh.param("local_planner_frequency", frequency, 10.0);
+    private_nh.param("dist_tolerance", dist_tolerance_, 0.1);
+    private_nh.param("angle_tolerance", angle_tolerance_, M_PI / 18.0);
 
     // Timeout granted to the local planner. We keep calling it up to this time or up to max_retries times
     // If it doesn't return within time, the navigator will cancel it and abort the corresponding action
@@ -292,7 +294,7 @@ template<class LOCAL_PLANNER_BASE>
         }
 
         // ask planner if the goal is reached
-        if (local_planner_->isGoalReached())
+        if (local_planner_->isGoalReached(dist_tolerance_, angle_tolerance_))
         {
           setState(ARRIVED_GOAL);
           // goal reached, tell it the controller

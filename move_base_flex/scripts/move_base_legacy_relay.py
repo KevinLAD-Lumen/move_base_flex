@@ -1,36 +1,42 @@
 #!/usr/bin/env python
+#
+# @author Jorge Santos
+# License: 3-Clause BSD
+
 import actionlib
 import copy
+
+import rospy
+import nav_msgs.srv as nav_srvs
 import move_base_flex_msgs.msg as mbf_msgs
 import move_base_msgs.msg as mb_msgs
-import rospy
 from dynamic_reconfigure.client import Client
 from dynamic_reconfigure.server import Server
 from geometry_msgs.msg import PoseStamped
 from move_base.cfg import MoveBaseConfig
 
-__author__ = 'Jorge Santos'
 
 """
 move_base legacy relay node:
 Relays old move_base actions to the new mbf move_base action, similar but with richer result and feedback.
-We also relay dynamic reconfiguration calls. NOTE: some parameters have changed names; see wiki for details
+We also relay the simple goal topic published by RViz, the make_plan service and dynamic reconfiguration
+calls (note that some parameters have changed names; see http://wiki.ros.org/move_base_flex for details)
 """
 
 
 def simple_goal_cb(msg):
-    mbf_ac.send_goal(mbf_msgs.MoveBaseGoal(target_pose=msg))
+    mbf_mb_ac.send_goal(mbf_msgs.MoveBaseGoal(target_pose=msg))
     rospy.logdebug("Relaying move_base_simple/goal pose to mbf")
-    mbf_ac.wait_for_result()
+    mbf_mb_ac.wait_for_result()
 
 
 def mb_execute_cb(msg):
-    mbf_ac.send_goal(mbf_msgs.MoveBaseGoal(target_pose=msg.target_pose), feedback_cb=mbf_feedback_cb)
+    mbf_mb_ac.send_goal(mbf_msgs.MoveBaseGoal(target_pose=msg.target_pose), feedback_cb=mbf_feedback_cb)
     rospy.logdebug("Relaying legacy move_base goal to mbf")
-    mbf_ac.wait_for_result()
+    mbf_mb_ac.wait_for_result()
 
-    status = mbf_ac.get_state()
-    result = mbf_ac.get_result()
+    status = mbf_mb_ac.get_state()
+    result = mbf_mb_ac.get_result()
 
     rospy.logdebug("MBF execution completed with status [%d]: %s", result.status, result.error_msg)
     if result.status == mbf_msgs.MoveBaseResult.SUCCESS:
@@ -48,6 +54,21 @@ def mb_execute_cb(msg):
                           "Robot is oscillating. Even after executing recovery behaviors.")
     else:  # mbf can also fail with FAILURE, COLLISION, GOAL_BLOCKED or START_BLOCKED
         mb_as.set_aborted(mb_msgs.MoveBaseResult(), result.error_msg)
+
+
+def make_plan_cb(request):
+    mbf_gp_ac.send_goal(mbf_msgs.GetPathGoal(start_pose=request.start, target_pose=request.goal,
+                                             use_start_pose = bool(request.start.header.frame_id),
+                                             tolerance=request.tolerance))
+    rospy.logdebug("Relaying legacy make_plan service to mbf get_path action server")
+    mbf_gp_ac.wait_for_result()
+
+    status = mbf_gp_ac.get_state()
+    result = mbf_gp_ac.get_result()
+
+    rospy.logdebug("MBF get_path execution completed with status [%d]: %s", result.status, result.error_msg)
+    if result.status == mbf_msgs.MoveBaseResult.SUCCESS:
+        return nav_srvs.GetPlanResponse(plan=result.path)
 
 
 def mbf_feedback_cb(feedback):
@@ -95,15 +116,22 @@ if __name__ == '__main__':
     # TODO what happens with malformed target goal???  FAILURE  or INVALID_POSE
     # txt must be:  "Aborting on goal because it was sent with an invalid quaternion"   
 
-    # move_base_flex action and dynamic reconfigure clients 
-    mbf_ac = actionlib.SimpleActionClient("move_base_flex/move_base", mbf_msgs.MoveBaseAction)
-    mbf_ac.wait_for_server(rospy.Duration(20))
+    # move_base_flex get_path and move_base action clients
+    mbf_mb_ac = actionlib.SimpleActionClient("move_base_flex/move_base", mbf_msgs.MoveBaseAction)
+    mbf_gp_ac = actionlib.SimpleActionClient("move_base_flex/get_path", mbf_msgs.GetPathAction)
+    mbf_mb_ac.wait_for_server(rospy.Duration(20))
+    mbf_gp_ac.wait_for_server(rospy.Duration(10))
+
+    # move_base_flex dynamic reconfigure client
     mbf_drc = Client("move_base_flex", timeout=10)
 
     # move_base simple topic and action server
-    rospy.Subscriber('/move_base_simple/goal', PoseStamped, simple_goal_cb)
+    mb_sg = rospy.Subscriber('/move_base_simple/goal', PoseStamped, simple_goal_cb)
     mb_as = actionlib.SimpleActionServer('move_base', mb_msgs.MoveBaseAction, mb_execute_cb, auto_start=False)
     mb_as.start()
+
+    # move_base make_plan service
+    mb_mps = rospy.Service('~make_plan', nav_srvs.GetPlan, make_plan_cb)
 
     # move_base dynamic reconfigure server
     mb_drs = Server(MoveBaseConfig, mb_reconf_cb)

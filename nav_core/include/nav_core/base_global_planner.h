@@ -89,23 +89,6 @@ namespace nav_core {
        * @param tolerance The tolerance to the goal pose
        * @param plan The plan... filled by the planner
        * @param cost The cost for the the plan
-       * @return True if a valid plan was found, false otherwise
-       *
-       * @deprecated This method is deprecated in move_base_flex in favor of the one providing detailed result.
-       */
-      virtual bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
-                            double tolerance, std::vector<geometry_msgs::PoseStamped>& plan, double& cost)
-      {
-        return makePlan(start, goal, plan, cost);
-      }
-
-      /**
-       * @brief Given a goal pose in the world, compute a plan
-       * @param start The start pose
-       * @param goal The goal pose
-       * @param tolerance The tolerance to the goal pose
-       * @param plan The plan... filled by the planner
-       * @param cost The cost for the the plan
        * @param error_code More detailed outcome; will be defaulted to DO_NOT_APPLY on planners
        * implementing the old move_base API
        * @param error_msg More detailed outcome as a string message

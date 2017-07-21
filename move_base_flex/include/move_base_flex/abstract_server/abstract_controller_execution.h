@@ -310,6 +310,12 @@ template<typename LOCAL_PLANNER_BASE>
 
     //! main controller loop variable, true if the controller is running, false otherwise
     bool moving_;
+
+    //! distance tolerance to the given goal pose
+    double dist_tolerance_;
+
+    //! angle tolerance to the given goal pose
+    double angle_tolerance_;
   };
 
 } /* namespace move_base_flex */

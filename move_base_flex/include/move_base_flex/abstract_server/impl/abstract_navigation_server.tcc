@@ -238,27 +238,37 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
     goal_pose = goal->target_pose;
     current_goal_pub_.publish(goal_pose);
 
-    double tolerance = goal_tolerance_; // TODO add tolerance field to action
+    double tolerance = goal->tolerance;
+    bool use_start_pose = goal->use_start_pose;
 
     active_planning_ = true;
 
-    // get the current robot pose
-    if (!getRobotPose(start_pose))
+    if(use_start_pose)
     {
-      ROS_ERROR_STREAM("Failed to get the current robot pose!");
-      action_server_get_path_ptr_->setAborted(result, "Could not get the current robot pose!");
-      active_planning_ = false;
+      start_pose = goal->start_pose;
+      geometry_msgs::Point p = start_pose.pose.position;
+      ROS_INFO_STREAM("Use the given start pose (" << p.x << ", " << p.y << ", " << p.z << ").");
     }
     else
     {
-      geometry_msgs::Point p = start_pose.pose.position;
-      ROS_INFO_STREAM("Got the current robot pose at (" << p.x << ", " << p.y << ", " << p.z << ")");
-      ROS_INFO_STREAM("Starting the planning thread");
-      if (!planning_ptr_->startPlanning(start_pose, goal_pose, tolerance))
-      {
-        ROS_ERROR_STREAM("Another thread is still planning. Canceling the service call.");
+      // get the current robot pose
+      if (!getRobotPose(start_pose)) {
+        ROS_ERROR_STREAM("Failed to get the current robot pose!");
+        action_server_get_path_ptr_->setAborted(result, "Could not get the current robot pose!");
         return;
+      } else {
+        geometry_msgs::Point p = start_pose.pose.position;
+        ROS_INFO_STREAM("Got the current robot pose at (" << p.x << ", " << p.y << ", " << p.z << ").");
       }
+    }
+
+    ROS_INFO_STREAM("Starting the planning thread.");
+    if (!planning_ptr_->startPlanning(start_pose, goal_pose, tolerance)) {
+      result.server_code = move_base_flex_msgs::GetPathResult::INTERNAL_ERROR;
+      result.server_msg = "Another thread is still planning!";
+      action_server_get_path_ptr_->setAborted(result, result.server_msg);
+      ROS_ERROR_STREAM(result.server_msg << " Canceling the action call.");
+      return;
     }
 
     typename AbstractPlannerExecution<GLOBAL_PLANNER_BASE>::PlanningState state_planning_input;
@@ -276,16 +286,16 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
       switch (state_planning_input)
       {
         case AbstractPlannerExecution<GLOBAL_PLANNER_BASE>::INITIALIZED:
-          ROS_INFO("robot_navigation state: initialized");
+          ROS_DEBUG("robot_navigation state: initialized");
           break;
 
         case AbstractPlannerExecution<GLOBAL_PLANNER_BASE>::STARTED:
-          ROS_INFO("robot_navigation state: started");
+          ROS_DEBUG("robot_navigation state: started");
           break;
 
         case AbstractPlannerExecution<GLOBAL_PLANNER_BASE>::STOPPED:
-          ROS_INFO("robot navigation state: stopped");
-          ROS_INFO("the planning has been aborted!");
+          ROS_DEBUG("robot navigation state: stopped");
+          ROS_INFO("Planning has been aborted!");
           result.path.header.stamp = ros::Time::now();
           result.server_code = move_base_flex_msgs::GetPathResult::STOPPED;
           result.server_msg = "Global planner has been stopped!";
@@ -295,7 +305,7 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
           break;
 
         case AbstractPlannerExecution<GLOBAL_PLANNER_BASE>::CANCELED:
-          ROS_INFO("robot navigation state: canceled");
+          ROS_DEBUG("robot navigation state: canceled");
           ROS_INFO("Global planner has been canceled successfully");
           result.path.header.stamp = ros::Time::now();
           result.server_code = move_base_flex_msgs::GetPathResult::CANCELED;
@@ -317,7 +327,7 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
           }
           else
           {
-            ROS_INFO_THROTTLE(2.0, "robot navigation state: planning");
+            ROS_DEBUG_THROTTLE(2.0, "robot navigation state: planning");
           }
           break;
 
@@ -326,12 +336,13 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
           // set time stamp to now
           result.path.header.stamp = ros::Time::now();
 
-          ROS_INFO("robot navigation state: found plan");
+          ROS_DEBUG("robot navigation state: found plan");
 
           planning_ptr_->getNewPlan(plan, costs);
           planning_ptr_->stopPlanning();
           planning_ptr_->getPluginInfo(result.plugin_code, result.plugin_msg);
 
+          publishPath(plan);
           if (costs > 0)
           {
             ROS_INFO_STREAM("Found a path with the costs: " << costs);

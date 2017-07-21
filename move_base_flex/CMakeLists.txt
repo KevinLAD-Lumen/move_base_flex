@@ -51,6 +51,9 @@ include_directories(
   ${Boost_INCLUDE_DIRS}
 )
 
+set(MBF_UTILITY mbf_navigation_util)
+add_library(${MBF_UTILITY} src/navigation_utility.cpp)
+
 set(MBF_MOVE_BASE_SERVER mbf_2d_nav_server)
 add_executable(${MBF_MOVE_BASE_SERVER}
   src/move_base_server_node.cpp
@@ -58,12 +61,12 @@ add_executable(${MBF_MOVE_BASE_SERVER}
   src/move_base_server/move_base_planner_execution.cpp
   src/move_base_server/move_base_controller_execution.cpp
   src/move_base_server/move_base_recovery_execution.cpp
-  src/navigation_utility.cpp
   )
 
 add_dependencies(${MBF_MOVE_BASE_SERVER} ${PROJECT_NAME}_gencfg)
 add_dependencies(${MBF_MOVE_BASE_SERVER} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${MBF_MOVE_BASE_SERVER}
+  ${MBF_UTILITY}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   )
@@ -74,17 +77,17 @@ add_executable(${MBF_SIMPLE_SERVER}
   src/simple_server/simple_planner_execution.cpp
   src/simple_server/simple_controller_execution.cpp
   src/simple_server/simple_recovery_execution.cpp
-  src/navigation_utility.cpp
   src/simple_server_node.cpp
   )
 add_dependencies(${MBF_SIMPLE_SERVER} ${PROJECT_NAME}_gencfg)
 add_dependencies(${MBF_SIMPLE_SERVER} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${MBF_SIMPLE_SERVER}
+  ${MBF_UTILITY}
   ${catkin_LIBRARIES}
   ${Boost_LIBRARIES}
   )
 
-install(TARGETS ${MBF_MOVE_BASE_SERVER} ${MBF_SIMPLE_SERVER}
+install(TARGETS ${MBF_UTILITY} ${MBF_MOVE_BASE_SERVER} ${MBF_SIMPLE_SERVER}
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

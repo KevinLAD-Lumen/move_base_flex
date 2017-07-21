@@ -89,6 +89,11 @@ namespace nav_core {
        */
       virtual bool isGoalReached() = 0;
 
+      virtual bool isGoalReached(double dist_tolerance, double angle_tolerance)
+      {
+        return isGoalReached();
+      }
+
       /**
        * @brief Set the plan that the local planner is following
        * @param plan The plan to pass to the local planner

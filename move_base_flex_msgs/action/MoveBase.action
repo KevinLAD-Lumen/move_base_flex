@@ -6,9 +6,9 @@ geometry_msgs/PoseStamped target_pose
 uint8  server_code
 string server_msg
 
-uint8 SUCCESS        = 40
-uint8 INTERNAL_ERROR = 41
-uint8 WRONG_CONFIG   = 42
+uint8 SUCCESS        = 0
+uint8 INTERNAL_ERROR = 1
+uint8 WRONG_CONFIG   = 2
 
 # Termination codes, might be provided by the plugins
 # For possible predefined plugin codes see the specific action
