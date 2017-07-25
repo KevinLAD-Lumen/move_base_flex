@@ -64,6 +64,7 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
     private_nh.param("tf_timeout", tf_timeout_, 3.0);
 
     path_pub_ = nh.advertise<nav_msgs::Path>("global_path", 1);
+    current_goal_pub_ = nh.advertise<geometry_msgs::PoseStamped>("current_goal", 1);
 
     // oscillation timeout and distance
     double oscillation_timeout;
@@ -234,7 +235,6 @@ template<class LOCAL_PLANNER_BASE, class GLOBAL_PLANNER_BASE, class RECOVERY_BEH
 
     result.path.header.seq = 0; // TODO check for a more meaningful id
     result.path.header.frame_id = global_frame_;
-
     goal_pose = goal->target_pose;
     current_goal_pub_.publish(goal_pose);
 
