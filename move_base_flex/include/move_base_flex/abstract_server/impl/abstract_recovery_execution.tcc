@@ -73,7 +73,10 @@ template<class RECOVERY_BEHAVIOR_BASE>
     }
     else
     {
-      ROS_INFO_STREAM("All recovery behavior plugins has been loaded successfully!");
+      if(!recovery_behaviors_.empty())
+      {
+        ROS_INFO_STREAM("All recovery behavior plugins has been loaded successfully!");
+      }
     }
 
     initRecoveryPlugins();
@@ -95,7 +98,10 @@ template<class RECOVERY_BEHAVIOR_BASE>
     ros::NodeHandle private_nh("~");
 
     XmlRpc::XmlRpcValue recovery_behaviors_param_list;
-    private_nh.getParam("recovery_behaviors", recovery_behaviors_param_list);
+    if(!private_nh.getParam("recovery_behaviors", recovery_behaviors_param_list)){
+      ROS_WARN_STREAM("No recovery bahaviors configured! - Use the param \"recovery_behaviors\", which must be a list of tuples with a name and a type.");
+      return true;
+    }
 
     try
     {

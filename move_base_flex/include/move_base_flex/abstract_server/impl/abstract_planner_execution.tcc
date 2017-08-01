@@ -110,7 +110,11 @@ template<class GLOBAL_PLANNER_BASE>
 
     double patience, frequency;
 
-    private_nh.param("global_planner", plugin_name_, std::string("navfn/NavfnROS"));
+    if(!private_nh.getParam("global_planner", plugin_name_))
+    {
+      ROS_ERROR_STREAM("Parameter \"global_planner\" ist not set!");
+      exit(0);
+    }
     private_nh.param("robot_frame", robot_frame_, std::string("base_footprint"));
     private_nh.param("map_frame", global_frame_, std::string("map"));
     private_nh.param("global_planner_max_retries", max_retries_, 10);

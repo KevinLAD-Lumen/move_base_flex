@@ -56,7 +56,11 @@ template<class LOCAL_PLANNER_BASE>
 
     double patience, frequency;
 
-    private_nh.param("local_planner", plugin_name_, std::string("base_local_planner/TrajectoryPlannerROS"));
+    if(!private_nh.getParam("local_planner", plugin_name_))
+    {
+      ROS_ERROR_STREAM("Parameter \"local_planner\" not set!");
+      exit(0);
+    }
     private_nh.param("robot_frame", robot_frame_, std::string("base_link"));
     private_nh.param("map_frame", global_frame_, std::string("map"));
     private_nh.param("local_planner_max_retries", max_retries_, 10);
