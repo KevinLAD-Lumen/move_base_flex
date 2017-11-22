@@ -356,8 +356,7 @@ template<class PLANNER_BASE>
           ROS_INFO_STREAM("Start planning");
 
           std::string message;
-          uint32_t outcome = planner_->mbfComputePath(current_start, current_goal, current_tolerance,
-                                                       plan, cost, message);
+          uint32_t outcome = planner_->makePlan(current_start, current_goal, current_tolerance, plan, cost, message);
           success = outcome < 10;
           setPluginInfo(outcome, message);
 

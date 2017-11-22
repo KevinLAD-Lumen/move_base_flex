@@ -81,7 +81,7 @@ namespace move_base_flex_core
        *         INTERNAL_ERROR  = 60
        *         71..99 are reserved as plugin specific errors
        */
-      virtual uint32_t mbfComputePath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
+      virtual uint32_t makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                                 double tolerance, std::vector<geometry_msgs::PoseStamped>& plan, double& cost,
                                 std::string& message) = 0;
 

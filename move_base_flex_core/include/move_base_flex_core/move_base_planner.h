@@ -34,25 +34,61 @@
 *
 * Author: Eitan Marder-Eppstein
 *********************************************************************/
-#ifndef MBF_CORE_GLOBAL_PLANNER_H
-#define MBF_CORE_GLOBAL_PLANNER_H
+#ifndef MBF_CORE_MOVE_BASE_PLANNER_H
+#define MBF_CORE_MOVE_BASE_PLANNER_H
 
 #include <geometry_msgs/PoseStamped.h>
 #include <costmap_2d/costmap_2d_ros.h>
 #include <nav_core/base_global_planner.h>
 #include "move_base_flex_core/abstract_planner.h"
 
-namespace move_base_flex_core {
+namespace move_base_flex_core
+{
   /**
    * @class MoveBasePlanner
    * @brief Provides an interface for global planners used in navigation.
    * All global planners written to work as MBF plugins must adhere to this interface. Alternatively, this
    * class can also operate as a wrapper for old API nav_core-based plugins, providing backward compatibility.
    */
-  class MoveBasePlanner : public AbstractPlanner{
+  class MoveBasePlanner : public AbstractPlanner, public nav_core::BaseGlobalPlanner
+  {
     public:
 
       typedef boost::shared_ptr< ::move_base_flex_core::MoveBasePlanner > Ptr;
+
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
+          const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan)
+      {
+        double cost;
+        std::string message;
+        return makePlan(start, goal, 0.0, plan, cost, message) == 0;
+      }
+
+      /**
+       * @brief Given a goal pose in the world, compute a plan
+       * @param start The start pose
+       * @param goal The goal pose
+       * @param plan The plan... filled by the planner
+       * @param cost The plans calculated cost
+       * @return True if a valid plan was found, false otherwise
+       */
+      virtual bool makePlan(const geometry_msgs::PoseStamped& start,
+                            const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan,
+                            double& cost)
+      {
+        std::string message;
+        return makePlan(start, goal, 0.0, plan, cost, message) == 0;
+      }
+
+      /**
+       * @brief  Initialization function for the BaseGlobalPlanner
+       * @param  name The name of this planner
+       * @param  costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
+       */
+//      virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+//      {
+//        mbfInitialize(name, costmap_ros);
+//      }
 
       /**
        * @brief Given a goal pose in the world, compute a plan
@@ -79,7 +115,7 @@ namespace move_base_flex_core {
        *         INTERNAL_ERROR  = 60
        *         71..99 are reserved as plugin specific errors
        */
-      virtual uint32_t mbfComputePath(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
+      virtual uint32_t makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
                                 double tolerance, std::vector<geometry_msgs::PoseStamped>& plan, double& cost,
                                 std::string& message)
       {
@@ -106,7 +142,7 @@ namespace move_base_flex_core {
        * @param name The name of this planner
        * @param costmap_ros A pointer to the ROS wrapper of the costmap to use for planning
        */
-      virtual void mbfInitialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
+      virtual void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
       {
         if (!backward_compatible_plugin)
           throw std::runtime_error("MBF API initialize method not overridden nor backward compatible plugin provided");
@@ -139,4 +175,4 @@ namespace move_base_flex_core {
   };
 };  // namespace move_base_flex_core
 
-#endif  // MBF_CORE_GLOBAL_PLANNER_H
+#endif  // MBF_CORE_MOVE_BASE_PLANNER_H

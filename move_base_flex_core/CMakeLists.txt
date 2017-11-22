@@ -3,6 +3,7 @@ project(move_base_flex_core)
 
 find_package(catkin REQUIRED
         COMPONENTS
+            nav_core
             std_msgs
             geometry_msgs
             tf
@@ -13,6 +14,7 @@ catkin_package(
     INCLUDE_DIRS
         include
     CATKIN_DEPENDS
+            nav_core
             std_msgs
             geometry_msgs
             tf
